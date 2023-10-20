@@ -1,36 +1,36 @@
 from textgen_messaging import TextgenMessaging
+from supabase_handler import SupabaseHandler
+import asyncio
 
 
-def chat_with_textgenai(user_input, user_id, history):
+async def chat_with_textgenai(user_input, user_id, history):
     messaging = TextgenMessaging()
+    response_text = messaging.send_message_and_get_response(
+        user_input, history)
 
-    # Send the user input to TextgenAI and get a response
-    response = messaging.send_message_and_get_response(user_input, history)
+    history_data = {
+        'user_id': user_id,
+        'history': {
+            'internal': history.get('internal', []) + [[user_input, response_text]],
+            'visible': history.get('visible', []) + [[user_input, response_text]]
+        }
+    }
 
-    # Append the user's message to the history
-    history['visible'].append({"role": "user", "content": user_input})
+    await SupabaseHandler.save_chat_history(user_id, history_data)
+    return history_data
 
-    # Append the LLM's response to the history
-    history['visible'].append({"role": "TextgenAI", "content": response})
 
-    # Save the updated chat history to the Supabase database
-    messaging.save_chat_history(user_id, history)
+async def main():
+    user_id = "123456"
+    user_input = input("You: ")
 
-    return history
+    history_data = await SupabaseHandler.get_chat_history(user_id) or {}
+    history = history_data.get('history', {'internal': [], 'visible': []})
 
+    history = await chat_with_textgenai(user_input, user_id, history)
+    print(f"TextgenAI: {history['history']['visible'][-1][1]}")
 
 if __name__ == "__main__":
-    user_id = "example_user_id"  # This can be any unique identifier for the user
-    history = {'internal': [], 'visible': []}  # Initialize the chat history
+    asyncio.run(main())
 
-    while True:
-        user_input = input("You: ")
-        if user_input.lower() in ["exit", "quit"]:
-            break
-
-        history = chat_with_textgenai(user_input, user_id, history)
-
-        # Print the LLM's response
-        # Get the latest message from the history
-        latest_response = history['visible'][-1]['content']
-        print(f"TextgenAI: {latest_response}")
+SupabaseHandler.close()
