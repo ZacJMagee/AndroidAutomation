@@ -5,14 +5,10 @@ from AngelicaAI.supabase_handler import SupabaseHandler
 from time import sleep
 from random import randint
 
-# Set up logging configuration
-logging.basicConfig(level=logging.INFO,
-                    format='%(asctime)s - %(levelname)s - %(message)s')
-
 
 class InstagramChatbot:
     def __init__(self):
-        self.d = d.connect()
+        self.d = d
         self.logger = logging.getLogger(__name__)
         try:
             self.textgen_messaging = TextgenMessaging()
@@ -43,23 +39,19 @@ class InstagramChatbot:
         return user_list
 
     def open_specific_chat(self, username):
-        """Open a specific chat based on the username."""
         self.logger.info(f"Attempting to open chat with {username}...")
-
-        # Wait for the chat element to appear
-        chat_element = d(
-            resourceId='com.instagram.android:id/row_inbox_container', description=username)
-
+        chat_element = self.d(descriptionContains=username,
+                              resourceId="com.instagram.android:id/row_inbox_container")
         if chat_element.exists:
             chat_element.click()
-            self.logger.info(f"Opened chat with {username}.")
+            self.logger.info(f"Chat with {username} opened successfully.")
         else:
             self.logger.warning(f"Chat element for {username} not found.")
 
     def get_username(self):
         return d(resourceId="com.instagram.android:id/row_thread_title_textview").text
 
-    def get_last_message(self):
+    def get_last_message(self, selected_username):
         messages = d(
             resourceId="com.instagram.android:id/row_thread_message_textview")
         return messages[-1].text if messages else None
