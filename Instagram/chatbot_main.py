@@ -1,8 +1,8 @@
 import logging
 from Instagram.instaChatbot import InstagramChatbot
 
-# Set up logging configuration
-logging.basicConfig(level=logging.INFO,
+# Adjust the logging configuration to capture debug logs
+logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s - %(levelname)s - %(message)s')
 
 
@@ -35,10 +35,15 @@ def interact_with_user(chatbot):
             pass
 
     selected_username = usernames[choice - 1]
+    logging.debug("About to open specific chat...")
+    print("About to open specific chat...")  # Direct print
     chatbot.open_specific_chat(selected_username)
+    print("Returned from open_specific_chat function...")  # Direct print
+    logging.debug("Returned from open_specific_chat function...")
     chatbot.wait(5, 7)  # Wait for a few seconds after opening the chat
     last_message = chatbot.get_last_message(selected_username)
     if last_message:
+        logging.info(f"Last message from {selected_username}: {last_message}")
         response = chatbot.generate_response(last_message)
         chatbot.send_message(response)
     else:

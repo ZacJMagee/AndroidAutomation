@@ -39,14 +39,37 @@ class InstagramChatbot:
         return user_list
 
     def open_specific_chat(self, username):
-        self.logger.info(f"Attempting to open chat with {username}...")
-        chat_element = self.d(descriptionContains=username,
-                              resourceId="com.instagram.android:id/row_inbox_container")
-        if chat_element.exists:
-            chat_element.click()
-            self.logger.info(f"Chat with {username} opened successfully.")
-        else:
-            self.logger.warning(f"Chat element for {username} not found.")
+        print("Returned from open_specific_chat function...")  # Direct print
+        self.logger.debug("Entered open_specific_chat function...")
+        try:
+            # Direct print
+            print(f"Attempting to open chat with {username}...")
+            self.logger.info(f"Attempting to open chat with {username}...")
+            chat_element = self.d(descriptionContains=username,
+                                  resourceId="com.instagram.android:id/row_inbox_container")
+            if chat_element.exists:
+                print("Chat element exists...")  # Direct print
+                self.wait(1, 2)  # Wait for a short duration
+                if chat_element.is_clickable():
+                    print("Chat element is clickable...")
+                    chat_element.click()
+                    self.wait(1, 2)
+                    # Wait after clicking to ensure chat opens
+                    print("Chat element is clickable...")
+                    self.logger.debug("Clicked on chat element...")
+                    self.logger.info(
+                        f"Chat with {username} opened successfully.")
+                else:
+                    print(f"Chat element for {username} is not clickable.")
+                    self.logger.warning(
+                        f"Chat element for {username} is not clickable.")
+            else:
+                print(f"Chat element for {username} not found.")
+                self.logger.warning(f"Chat element for {username} not found.")
+        except Exception as e:
+            print(f"Error while trying to open chat with {username}: {e}")
+            self.logger.error(
+                f"Error while trying to open chat with {username}: {e}")
 
     def get_username(self):
         return d(resourceId="com.instagram.android:id/row_thread_title_textview").text
