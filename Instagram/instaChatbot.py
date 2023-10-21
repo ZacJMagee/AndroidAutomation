@@ -12,6 +12,8 @@ logging.basicConfig(level=logging.INFO,
 
 class InstagramChatbot:
     def __init__(self):
+        self.d = d.connect()
+        self.logger = logging.getLogger(__name__)
         try:
             self.textgen_messaging = TextgenMessaging()
             logging.info("TextgenMessaging initialized successfully")
@@ -34,13 +36,25 @@ class InstagramChatbot:
         self.wait()
 
     def list_usernames(self):
-        usernames = d(
-            resourceId="com.instagram.android:id/row_thread_title_textview")
-        return [user.text for user in usernames]
+        usernames = d(resourceId="com.instagram.android:id/row_inbox_username")
+        user_list = [user.text for user in usernames]
+        logging.info(
+            f"Detected {len(user_list)} usernames: {', '.join(user_list)}")
+        return user_list
 
     def open_specific_chat(self, username):
-        d(text=username).click()
-        self.wait()
+        """Open a specific chat based on the username."""
+        self.logger.info(f"Attempting to open chat with {username}...")
+
+        # Wait for the chat element to appear
+        chat_element = d(
+            resourceId='com.instagram.android:id/row_inbox_container', description=username)
+
+        if chat_element.exists:
+            chat_element.click()
+            self.logger.info(f"Opened chat with {username}.")
+        else:
+            self.logger.warning(f"Chat element for {username} not found.")
 
     def get_username(self):
         return d(resourceId="com.instagram.android:id/row_thread_title_textview").text
