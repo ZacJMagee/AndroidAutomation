@@ -1,6 +1,7 @@
 import os
 import requests
 import json
+import html
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
@@ -10,7 +11,7 @@ load_dotenv()
 class TextgenMessaging:
     def __init__(self):
         self.TEXTGEN_API_URL = os.getenv(
-            'TEXTGEN_API_URL', "http://localhost:5000/api/v1/chat")
+            'TEXTGEN_API_URL')
         self.HEADERS = {
             "Content-Type": "application/json"
         }
@@ -37,7 +38,7 @@ class TextgenMessaging:
             visible_history = data.get('results', [{}])[0].get(
                 'history', {}).get('visible', [])
             generated_text = visible_history[-1][1] if visible_history else 'No response from TextgenAI'
-            return generated_text
+            return html.unescape(generated_text)  # Unescape here
         except (json.JSONDecodeError, IndexError, KeyError):
             raise Exception(
                 "Error decoding JSON or extracting the generated message.")

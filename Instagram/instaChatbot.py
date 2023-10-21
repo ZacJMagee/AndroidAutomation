@@ -52,6 +52,8 @@ class InstagramChatbot:
 
             # Check if the chat element exists and click it
             if chat_element.exists:
+                logging.debug("Chat element exists. Trying to click...")
+                print("Chat element exists. Trying to click...")  # Direct print
                 chat_element.click()
                 logging.debug(f"Opened chat with {username}...")
                 print(f"Opened chat with {username}...")  # Direct print
@@ -75,10 +77,18 @@ class InstagramChatbot:
             message_elements = self.d(
                 resourceId="com.instagram.android:id/direct_text_message_text_view")
 
-            # If message elements are found, return the last one
+            # Log the number of message elements found
+            logging.debug(f"Found {len(message_elements)} message elements.")
+
+            # If message elements are found, iterate in reverse to find the last valid message
             if message_elements.exists:
-                last_message = message_elements[-1].text
-                return last_message
+                for i in range(len(message_elements) - 1, -1, -1):
+                    message = message_elements[i].text
+                    if message:
+                        return message
+                logging.warning(
+                    f"No valid messages found in the chat with {username}.")
+                return None
             else:
                 logging.warning(
                     f"No messages found in the chat with {username}.")
