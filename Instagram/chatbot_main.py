@@ -1,43 +1,38 @@
+import logging
 from Instagram.instaChatbot import InstagramChatbot
 
-print("Starting script...")
+# Set up logging configuration
+logging.basicConfig(level=logging.INFO,
+                    format='%(asctime)s - %(levelname)s - %(message)s')
+
+
+def initialize_chatbot():
+    chatbot = InstagramChatbot()
+    logging.info("InstagramChatbot initialized")
+    return chatbot
+
+
+def interact_with_user(chatbot, username):
+    chatbot.open_specific_chat(username)
+    logging.info(f"Opened chat with {username}.")
+    messages = chatbot.read_messages_last_two()
+    logging.info(f"Retrieved last two messages: {messages}")
+    latest_history = chatbot.fetch_latest_chat_history(username)
+    logging.info(f"Retrieved latest history from Supabase: {latest_history}")
+    response = chatbot.respond_to_last_message(messages)
+    logging.info(f"Generated response: {response}")
+    chatbot.send_message(response)
+    logging.info(f"Response sent to {username}'s chat.")
+    chatbot.store_messages(messages)
+    logging.info(f"Stored {len(messages)} messages to Supabase.")
 
 
 def main():
-    # Create an instance of InstagramChatbot
-    chatbot = InstagramChatbot()
-    print("InstagramChatbot initialized")
-
-    # List all available chats (usernames)
-    chatbot.list_usernames()
-    print("Listed names")
-
-    # Open chat with Molly
-    chatbot.open_specific_chat("molly magee ˙ᵕ˙")
-    print("Opened chat with Molly.")
-
-    # Get the last two messages from the chat
-    messages = chatbot.read_messages_last_two()
-    print(f"Retrieved last two messages: {messages}")
-
-    # Fetch the latest chat history from Supabase
-    latest_history = chatbot.fetch_latest_chat_history("molly magee ˙ᵕ˙")
-    print(f"Retrieved latest history from Supabase: {latest_history}")
-
-    # Generate a response using the last two messages
-    response = chatbot.respond_to_last_message(messages)
-    print(f"Generated response: {response}")
-
-    # Send the generated response to Molly
-    chatbot.send_message(response)
-    print("Response sent to Molly's chat.")
-
-    # Store the last two messages to Supabase
-    chatbot.store_messages(messages)
-    print(f"Stored {len(messages)} messages to Supabase.")
-
-    print("Script stopped.")
+    chatbot = initialize_chatbot()
+    username = input("Enter the username to interact with: ")
+    interact_with_user(chatbot, username)
+    logging.info("Script stopped.")
 
 
-# Run the main method
-main()
+if __name__ == "__main__":
+    main()

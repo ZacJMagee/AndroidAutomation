@@ -1,6 +1,10 @@
 from uiautomator import device as d
 import re
+import logging
 from utils import random_wait
+
+logging.basicConfig(level=logging.INFO,
+                    format='%(asctime)s - %(levelname)s - %(message)s')
 
 
 class InstagramActions:
@@ -10,15 +14,37 @@ class InstagramActions:
     def open_instagram(self):
         d.press.home()
         d(text="Instagram").click()
+        logging.info("Instagram opened")
 
     def close_instagram(self):
         d.press.home()
+        logging.info("Instagram closed")
 
     def navigate_to_home_feed(self):
         d(resourceId='com.instagram.android:id/feed_tab').click()
+        logging.info("Navigated to home feed")
+
+    def is_post_sponsored(self):
+        # Logic to determine if a post is sponsored
+        sponsored_label = d(textContains="Sponsored")
+        return sponsored_label.exists
+
+    def find_next_like_button(self):
+        # Logic to find the next like button
+        like_button = d(descriptionContains="Like")
+        return like_button.exists
+
+    def like_post(self):
+        # Logic to like a post
+        like_button = d(descriptionContains="Like")
+        if like_button.exists:
+            like_button.click()
+            logging.info("Post liked")
+        else:
+            logging.warning("Like button not found")
 
 
-class CommentInteractions:
+class CommentInteractions(InstagramActions):
     def __init__(self):
         super().__init__()
         self.processed_comments = set()
@@ -29,12 +55,13 @@ class CommentInteractions:
             d.swipe(525, 1105, 565, 625, steps=30)
             random_wait(1, 2)
             tries += 1
+        logging.info("Scrolled until comment section is visible")
 
     def get_total_comments(self):
         comment_section = self.find_comment_section()
         if comment_section:
             text = comment_section.text
-            match = re.search(r'(\d+)', text)
+            match = re.search(r'(\\d+)', text)
             if match:
                 return int(match.group(1))
         return 0
@@ -44,6 +71,7 @@ class CommentInteractions:
         if comment_section:
             comment_section.click()
             random_wait(3, 4)
+            logging.info("Opened comment section")
 
     def capture_comments(self, batches=1, liked_count=0, max_likes=None):
         all_comments = []
@@ -80,8 +108,9 @@ class CommentInteractions:
                     previous_comments = current_comments
                     break
 
-                except Exception:  # UIautomator doesn't have StaleElementReferenceException, so a general exception is used
-                    print("Encountered an error. Re-finding elements...")
+                except Exception:
+                    logging.error(
+                        "Encountered an error. Re-finding elements...")
                     comment_elements = d(
                         resourceId='com.instagram.android:id/row_comment_textview_comment')
 
@@ -92,15 +121,13 @@ class CommentInteractions:
     def get_comments_with_keywords(self, keywords):
         """Extract comments containing specific keywords from the current post."""
         comments = []
-
-        # Assuming the comment element has a resource id of 'commentId' (this needs to be adjusted)
         comment_elements = d(resourceId='commentId')
-
         for comment_element in comment_elements:
             comment_text = comment_element.text
             if any(keyword in comment_text for keyword in keywords):
                 comments.append(comment_text)
-
+        logging.info(
+            f"Extracted {len(comments)} comments with specified keywords.")
         return comments
 
     def like_comments_based_on_criteria(self, comments, liked_count, max_likes):
@@ -108,12 +135,12 @@ class CommentInteractions:
         for comment_text, comment_element in comments:
             if liked_count >= max_likes:
                 return liked_count
-
             for keyword in keywords:
                 if keyword in comment_text:
                     self.like_comment(comment_element)
                     liked_count += 1
                     break
+        logging.info(f"Liked {liked_count} comments based on criteria.")
         return liked_count
 
     def like_comment(self, comment_element):
@@ -122,32 +149,33 @@ class CommentInteractions:
                 resourceId='com.instagram.android:id/row_comment_textview_comment')
             all_like_buttons = d(
                 resourceId='com.instagram.android:id/row_comment_like_button_click_area')
-
             comment_index = all_comment_elements.index(comment_element)
-
             like_button = all_like_buttons[comment_index]
             like_button.click()
-            print(f"Successfully liked the comment: '{comment_element.text}'.")
-
+            logging.info(
+                f"Successfully liked the comment: '{comment_element.text}'.")
         except ValueError:
-            print(
-                f"Error: The comment '{comment_element.text}' is not in the current view")
-
-        except Exception:  # Catching general exceptions in case the like button isn't found or any other issues arise
-            print(
+            logging.error(
+                f"Error: The comment '{comment_element.text}' is not in the current view.")
+        except Exception:
+            logging.error(
                 f"Error: Like button not found for the comment: '{comment_element.text}'.")
 
     def close_comment_section(self):
         d.press.back()
+        logging.info("Closed comment section.")
 
     def is_in_comment_section(self):
-        return d.exists(resourceId='com.instagram.android:id/layout_comment_thread_edittext')
+        in_section = d.exists(
+            resourceId='com.instagram.android:id/layout_comment_thread_edittext')
+        return in_section
 
     def recover_from_disruption(self):
         d.press.back()
         random_wait(1, 2)
         if not self.is_in_comment_section():
-            print("Recovery Failed. Restarting sequence for this post.")
+            logging.warning(
+                "Recovery Failed. Restarting sequence for this post.")
             self.close_comment_section()
             self.scroll_until_comment_section_visible()
             self.open_comment_section()
