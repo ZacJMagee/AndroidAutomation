@@ -31,12 +31,18 @@ class InstagramChatbot:
         d(description="Direct").click()
         self.wait()
 
-    def list_usernames(self):
+    def list_new_messages(self):
+        usernames_with_new_messages = []
         usernames = d(resourceId="com.instagram.android:id/row_inbox_username")
-        user_list = [user.text for user in usernames]
+
+        for user in usernames:
+            # Check for the presence of the new message indicator for each user
+            if d(resourceId="com.instagram.android:id/thread_indicator_status_dot").exists:
+                usernames_with_new_messages.append(user.text)
+
         logging.info(
-            f"Detected {len(user_list)} usernames: {', '.join(user_list)}")
-        return user_list
+            f"Detected new messages from: {', '.join(usernames_with_new_messages)}")
+        return usernames_with_new_messages
 
     def open_specific_chat(self, username):
         logging.debug("Entered open_specific_chat function...")
