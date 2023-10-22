@@ -128,24 +128,6 @@ class InstagramChatbot:
         self.supabase_handler.save_chat_history(
             username, {"history": messages})
 
-    def test_uiautomator(self):
-        print("Testing basic UIAutomator functionality...")
-        try:
-            # Press the home button
-            self.d.press.home()
-            print("Pressed home button...")
-            self.wait(1, 2)
-
-            # Open Instagram app
-            if self.d(text="Instagram").exists:
-                self.d(text="Instagram").click()
-                print("Opened Instagram app...")
-                self.wait(1, 2)
-            else:
-                print("Instagram app not found on home screen...")
-        except Exception as e:
-            print(f"Error during UIAutomator test: {e}")
-
 
 if __name__ == "__main__":
     bot = InstagramChatbot()

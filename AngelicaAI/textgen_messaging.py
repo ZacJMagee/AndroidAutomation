@@ -20,7 +20,7 @@ class TextgenMessaging:
         data = {
             "user_input": user_input,
             "mode": "chat",
-            "character": "Angelica1",
+            "character": "Angelica",
             "state": {
                 "history": history
             }
