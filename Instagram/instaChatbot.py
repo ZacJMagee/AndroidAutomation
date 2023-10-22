@@ -7,15 +7,15 @@ from random import randint
 
 
 class InstagramChatbot:
-    def __init__(self):
+    def __init__(self, supabase_url, supabase_key):
         self.d = d
         self.logger = logging.getLogger(__name__)
         try:
-            self.textgen_messaging = TextgenMessaging()
+            self.supabase_handler = SupabaseHandler(supabase_url, supabase_key)
+            self.textgen_messaging = TextgenMessaging()  # No parameters required here
             logging.info("TextgenMessaging initialized successfully")
         except Exception as e:
             logging.error(f"Error initializing TextgenMessaging: {e}")
-        self.supabase_handler = SupabaseHandler()
         logging.info("Supabase initialized")
 
     def wait(self, min_seconds=5, max_seconds=10):
@@ -33,14 +33,22 @@ class InstagramChatbot:
 
     def list_new_messages(self):
         usernames_with_new_messages = []
-        usernames = d(resourceId="com.instagram.android:id/row_inbox_username")
+        chat_containers = d(
+            resourceId="com.instagram.android:id/row_inbox_container")
 
-        for user in usernames:
-            # Check for the presence of the new message indicator for each user
-            if d(resourceId="com.instagram.android:id/thread_indicator_status_dot").exists:
-                usernames_with_new_messages.append(user.text)
+        for chat_container in chat_containers:
+            username_element = chat_container.child(
+                resourceId="com.instagram.android:id/row_inbox_username")
+            content_desc = chat_container.info.get('contentDescription', '')
+            if 'unread' in content_desc and username_element.exists:
+                usernames_with_new_messages.append(username_element.text)
+                self.logger.debug(
+                    f"New message indicator found for user: {username_element.text}")
+            else:
+                self.logger.debug(
+                    f"No new message indicator found for user: {username_element.text}")
 
-        logging.info(
+        self.logger.info(
             f"Detected new messages from: {', '.join(usernames_with_new_messages)}")
         return usernames_with_new_messages
 
@@ -129,10 +137,12 @@ class InstagramChatbot:
     def fetch_latest_chat_history(self, username):
         return self.supabase_handler.get_chat_history(username)
 
-    def store_messages(self, messages):
-        username = self.get_username()
-        self.supabase_handler.save_chat_history(
-            username, {"history": messages})
+    def store_message(self, conversation_id, message_text, timestamp, sender):
+        self.supabase_handler.store_message(
+            conversation_id, message_text, timestamp, sender)
+
+    def get_recent_messages(self, conversation_id, limit=10):
+        return self.supabase_handler.get_recent_messages(conversation_id, limit)
 
 
 if __name__ == "__main__":

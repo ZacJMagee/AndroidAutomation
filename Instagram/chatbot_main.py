@@ -1,18 +1,25 @@
 import logging
 import random
+import os
+from dotenv import load_dotenv
 from Instagram.instaChatbot import InstagramChatbot
 from time import sleep
+from AngelicaAI.supabase_handler import SupabaseHandler  # Import SupabaseHandler
 
+load_dotenv()
 
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s - %(levelname)s - %(message)s')
 
 logging.getLogger("urllib3").setLevel(logging.WARNING)
 
+supabase_url = os.environ.get("SUPABASE_URL")
+supabase_key = os.environ.get("SUPABASE_KEY")
+
 
 def main():
     # Initialize the chatbot
-    chatbot = InstagramChatbot()
+    chatbot = InstagramChatbot(supabase_url, supabase_key)
 
     # Check for new messages
     new_messages = chatbot.list_new_messages()
@@ -27,9 +34,16 @@ def main():
         if last_message:
             print(f"Last message from {username}: {last_message}")
 
+            # Store the last message in Supabase
+            chatbot.store_message(
+                'conversation_id', last_message, 'timestamp', 'user')
+
+            # Retrieve recent messages for this conversation from Supabase
+            recent_messages = chatbot.get_recent_messages('conversation_id')
+            print("Recent messages from Supabase:", recent_messages)
+
             # Generate a response using TextgenMessaging
-            response = chatbot.textgen_messaging.send_message(
-                last_message, [last_message])
+            response = chatbot.generate_response(last_message, recent_messages)
 
             print(f"Generated response: {response}")
 
