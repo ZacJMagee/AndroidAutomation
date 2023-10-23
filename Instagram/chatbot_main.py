@@ -1,7 +1,7 @@
 import logging
 import os
 from dotenv import load_dotenv
-from Instagram.instaChatbot import InstagramChatbot
+from Instagram.instagram import InstagramChatbot
 from datetime import datetime
 
 load_dotenv()
