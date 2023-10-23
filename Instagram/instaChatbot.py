@@ -33,23 +33,35 @@ class InstagramChatbot:
 
     def list_new_messages(self):
         usernames_with_new_messages = []
-        chat_containers = d(
-            resourceId="com.instagram.android:id/row_inbox_container")
+        try:
+            chat_containers = d(
+                resourceId="com.instagram.android:id/row_inbox_container")
+            if not chat_containers.wait.exists(timeout=10000):
+                self.logger.error("Chat containers not found.")
+                return usernames_with_new_messages
 
-        for chat_container in chat_containers:
-            username_element = chat_container.child(
-                resourceId="com.instagram.android:id/row_inbox_username")
-            content_desc = chat_container.info.get('contentDescription', '')
-            if 'unread' in content_desc and username_element.exists:
-                usernames_with_new_messages.append(username_element.text)
-                self.logger.debug(
-                    f"New message indicator found for user: {username_element.text}")
-            else:
-                self.logger.debug(
-                    f"No new message indicator found for user: {username_element.text}")
+            for chat_container in chat_containers:
+                username_element = chat_container.child(
+                    resourceId="com.instagram.android:id/row_inbox_username")
+                if not username_element.wait.exists(timeout=10000):
+                    self.logger.error("Username element not found.")
+                    continue
 
-        self.logger.info(
-            f"Detected new messages from: {', '.join(usernames_with_new_messages)}")
+                content_desc = chat_container.info.get(
+                    'contentDescription', '')
+                if 'unread' in content_desc and username_element.exists:
+                    usernames_with_new_messages.append(username_element.text)
+                    self.logger.debug(
+                        f"New message indicator found for user: {username_element.text}")
+                else:
+                    self.logger.debug(
+                        f"No new message indicator found for user: {username_element.text}")
+
+            self.logger.info(
+                f"Detected new messages from: {', '.join(usernames_with_new_messages)}")
+        except Exception as e:
+            self.logger.error(f"Error in list_new_messages: {e}")
+
         return usernames_with_new_messages
 
     def open_specific_chat(self, username):
@@ -130,9 +142,9 @@ class InstagramChatbot:
             logging.error(f"Error while trying to send message: {e}")
 
     def respond_to_last_message(self, messages):
-        response = self.textgen_messaging.send_message_and_get_response(
-            messages[-1], messages)
+        response = self.textgen_messaging.send_message(messages[-1], messages)
         self.send_message(response)
+        return response
 
     def fetch_latest_chat_history(self, username):
         return self.supabase_handler.get_chat_history(username)
@@ -143,6 +155,19 @@ class InstagramChatbot:
 
     def get_recent_messages(self, conversation_id, limit=10):
         return self.supabase_handler.get_recent_messages(conversation_id, limit)
+
+    def close_chat(self):
+        try:
+            back_button = self.d(
+                resourceId="com.instagram.android:id/action_bar_button_back")
+            if back_button.exists:
+                back_button.click()
+                self.wait(1, 2)
+            else:
+                self.logger.warning(
+                    "Back button not found. Could not close the chat.")
+        except Exception as e:
+            self.logger.error(f"Error while trying to close the chat: {e}")
 
 
 if __name__ == "__main__":
