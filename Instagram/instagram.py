@@ -1,4 +1,5 @@
 from uiautomator import device as d
+import random
 import re
 import logging
 from .utils import random_sleep
@@ -13,7 +14,7 @@ class InstagramActions:
     def __init__(self):
         pass
 
-    def open_instagram():
+    def open_instagram(self):
         d.press.home()
         random_sleep(2, 4)  # Replacing the self.wait method
         d(text="Instagram").click()
@@ -23,6 +24,28 @@ class InstagramActions:
     def close_instagram(self):
         d.press.home()
         logging.info("Instagram closed")
+
+    def check_for_new_messages(self):
+        # Wait for the inbox button to be visible
+        inbox_button = d(
+            resourceId="com.instagram.android:id/action_bar_inbox_button")
+        if inbox_button.wait.exists(timeout=10000):  # wait for 10 seconds
+            # Retrieve the content description
+            content_desc = inbox_button.info.get('contentDescription', '')
+
+            # Check for new messages
+            match = re.search(r'(\d+) unread message', content_desc)
+            if match:
+                num_unread_messages = int(match.group(1))
+                logging.info(
+                    f"You have {num_unread_messages} unread message(s).")
+                return True
+            else:
+                logging.info("No new messages.")
+                return False
+        else:
+            logging.error("Inbox button not found")
+            return False
 
     def navigate_to_home_feed(self):
         d(resourceId='com.instagram.android:id/feed_tab').click()
@@ -49,7 +72,8 @@ class InstagramActions:
 
 
 class CommentInteractions(InstagramActions):
-    def __init__(self):
+    def __init__(self, chatbot):
+        self.chatbot = chatbot
         super().__init__()
         self.processed_comments = set()
 
@@ -78,10 +102,28 @@ class CommentInteractions(InstagramActions):
         comment_section = self.find_comment_section()
         if comment_section:
             text = comment_section.text
-            match = re.search(r'(\\d+)', text)
+            match = re.search(r'(\d+)', text)
             if match:
                 return int(match.group(1))
         return 0
+
+    def calculate_likes(self):
+        total_comments = self.get_total_comments()
+        if total_comments == 0:
+            logging.info("No comments found on the post.")
+            return
+
+        # Calculate the number of comments to like
+        # At least 1 like or 20% of total comments
+        min_likes = max(int(total_comments * 0.20), 1)
+        # At most 80% of total comments or 50 likes
+        max_likes = min(int(total_comments * 0.80), 50)
+        comments_to_like = random.randint(min_likes, max_likes)
+
+        logging.info(f"Total comments: {total_comments}")
+        logging.info(f"Planning to like {comments_to_like} comments.")
+
+        return comments_to_like
 
     def open_comment_section(self):
         comment_section = self.find_comment_section()
@@ -200,6 +242,7 @@ class CommentInteractions(InstagramActions):
 
 class InstagramChatbot:
     def __init__(self, supabase_url, supabase_key):
+        self.instagram_actions = InstagramActions()
         self.d = d
         self.logger = logging.getLogger(__name__)
         try:
@@ -210,12 +253,34 @@ class InstagramChatbot:
             logging.error(f"Error initializing TextgenMessaging: {e}")
         logging.info("Supabase initialized")
 
+    def open_instagram(self):
+        return self.instagram_actions.open_instagram()
+
     def wait(self, min_seconds=5, max_seconds=10):
         random_sleep(min_seconds, max_seconds)
 
     def open_messages(self):
-        d(description="Direct").click()
-        self.wait()
+        # Wait for the inbox button to be visible
+        inbox_button = d(
+            resourceId="com.instagram.android:id/action_bar_inbox_button")
+        if inbox_button.wait.exists(timeout=10000):  # wait for 10 seconds
+            # Retrieve the content description
+            content_desc = inbox_button.info.get('contentDescription', '')
+
+            # Check for new messages
+            match = re.search(r'(\d+) unread message', content_desc)
+            if match:
+                num_unread_messages = int(match.group(1))
+                logging.info(
+                    f"You have {num_unread_messages} unread message(s).")
+            else:
+                logging.info("No new messages.")
+
+            # Click the inbox button to open messages
+            inbox_button.click()
+            logging.info("Messages opened")
+        else:
+            logging.error("Inbox button not found")
 
     def list_new_messages(self):
         usernames_with_new_messages = []
