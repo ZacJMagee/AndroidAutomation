@@ -3,6 +3,7 @@ import random
 import re
 import logging
 from .utils import random_sleep
+from time import time
 from AngelicaAI.textgen_messaging import TextgenMessaging
 from AngelicaAI.supabase_handler import SupabaseHandler
 
@@ -107,7 +108,7 @@ class CommentInteractions(InstagramActions):
                 return int(match.group(1))
         return 0
 
-    def calculate_likes(self):
+    def calculate_likes(self, total_comments):
         total_comments = self.get_total_comments()
         if total_comments == 0:
             logging.info("No comments found on the post.")
@@ -152,15 +153,18 @@ class CommentInteractions(InstagramActions):
                             comments.append((element.text, element))
                             self.processed_comments.add(element.text)
 
+                    # Like comments based on criteria
                     liked_count = self.like_comments_based_on_criteria(
                         comments, liked_count, max_likes)
+                    if max_likes is not None and liked_count >= max_likes:
+                        return all_comments, liked_count
 
                     current_comments = set([comment[0]
                                            for comment in comments])
                     if current_comments == previous_comments:
                         repetitive_count += 1
                         if repetitive_count >= 2:
-                            return all_comments
+                            return all_comments, liked_count
                     else:
                         repetitive_count = 0
 
@@ -175,19 +179,31 @@ class CommentInteractions(InstagramActions):
 
             d.swipe(500, 1165, 515, 680, steps=30)
 
-        return all_comments
+        return all_comments, liked_count
 
-    def get_comments_with_keywords(self, keywords):
-        """Extract comments containing specific keywords from the current post."""
-        comments = []
-        comment_elements = d(resourceId='commentId')
-        for comment_element in comment_elements:
-            comment_text = comment_element.text
-            if any(keyword in comment_text for keyword in keywords):
-                comments.append(comment_text)
+    def get_comments_with_keywords(self, keywords, batches=2):
+        all_comments = set()
+        extracted_comments = []
+
+        for _ in range(batches):
+            comment_elements = d(
+                resourceId='com.instagram.android:id/row_comment_textview_comment')
+            for comment_element in comment_elements:
+                comment_text = comment_element.text
+                if comment_text not in all_comments:
+                    all_comments.add(comment_text)
+                    if any(keyword in comment_text for keyword in keywords):
+                        extracted_comments.append(comment_text)
+                        logging.info(
+                            f"Extracted comment with keywords: {comment_text}")
+
+            # Scroll to load more comments
+            d.swipe(500, 1000, 500, 500, steps=10)
+            random_sleep  # Wait for comments to load
+
         logging.info(
-            f"Extracted {len(comments)} comments with specified keywords.")
-        return comments
+            f"Extracted {len(extracted_comments)} comments with specified keywords.")
+        return extracted_comments
 
     def like_comments_based_on_criteria(self, comments, liked_count, max_likes):
         keywords = ["😊", "👍", "❤️", "🥰", "😘", "😍", "🤤"]

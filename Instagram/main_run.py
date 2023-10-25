@@ -50,17 +50,28 @@ def main():
 
     # Comment interactions
     total_comments = comment_interactions.get_total_comments()
-    if total_comments > 0:
-        comments_to_like = comment_interactions.calculate_likes(total_comments)
-        comments_with_keywords = comment_interactions.get_comments_with_keywords(
-            ["😊", "👍", "❤️", "🥰", "😘", "😍", "🤤"])
-        liked_count = comment_interactions.like_comments_based_on_criteria(
-            comments_with_keywords, 0, comments_to_like)
-        logging.info(f"Liked {liked_count} comments based on criteria.")
-    else:
+    if total_comments == 0:
         logging.info("No comments found to interact with.")
+        logging.info("Trying to scroll until comment section is visible...")
+        comment_interactions.scroll_until_comment_section_visible()
+        total_comments = comment_interactions.get_total_comments()
+        if total_comments == 0:
+            logging.info("Still no comments found after scrolling.")
+            return
 
-    chatbot.close_instagram()
+    comments_to_like = comment_interactions.calculate_likes(total_comments)
+    comment_interactions.open_comment_section()  # Open the comment section
+
+    random_sleep()
+
+    comments_with_keywords = comment_interactions.get_comments_with_keywords(
+        ["😊", "👍", "❤️", "🥰", "😘", "😍", "😎"])
+    liked_count = comment_interactions.like_comments_based_on_criteria(
+        comments_with_keywords, 0, comments_to_like)
+    logging.info(f"Liked {liked_count} comments based on criteria.")
+
+    # Do not close Instagram, continue with other actions if needed
+    # chatbot.close_instagram()
 
 
 if __name__ == "__main__":
