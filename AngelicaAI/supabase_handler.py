@@ -24,7 +24,7 @@ class SupabaseHandler:
     def get_or_create_conversation(self, username):
         # Check if a conversation with this username already exists
         existing_conversation = self.supabase.table("conversations").select(
-            "id, conversation_id").eq("username", username).execute()
+            "conversation_id").eq("username", username).execute()
 
         if existing_conversation.data:
             # Conversation exists, return the existing ID
