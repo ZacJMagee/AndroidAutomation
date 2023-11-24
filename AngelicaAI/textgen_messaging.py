@@ -10,20 +10,16 @@ load_dotenv()
 
 class TextgenMessaging:
     def __init__(self):
-        self.TEXTGEN_API_URL = os.getenv(
-            'TEXTGEN_API_URL')
+        self.TEXTGEN_API_URL = "http://127.0.0.1:5000/v1/chat/completions"
         self.HEADERS = {
             "Content-Type": "application/json"
         }
 
     def send_message(self, user_input, history):
         data = {
-            "user_input": user_input,
             "mode": "chat",
             "character": "Angelica",
-            "state": {
-                "history": history
-            }
+            "messages": [{"role": "user", "content": user_input}] + history
         }
         response = requests.post(
             self.TEXTGEN_API_URL,
@@ -35,10 +31,8 @@ class TextgenMessaging:
     def _handle_response(self, response):
         try:
             data = response.json()
-            visible_history = data.get('results', [{}])[0].get(
-                'history', {}).get('visible', [])
-            generated_text = visible_history[-1][1] if visible_history else 'No response from TextgenAI'
-            return html.unescape(generated_text)  # Unescape here
+            assistant_message = data['choices'][0]['message']['content']
+            return html.unescape(assistant_message)  # Unescape here
         except (json.JSONDecodeError, IndexError, KeyError):
             raise Exception(
                 "Error decoding JSON or extracting the generated message.")
