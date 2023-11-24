@@ -33,7 +33,7 @@ class SupabaseHandler:
             # Conversation does not exist, create a new one
             new_conversation_data = {
                 "username": username,
-                # Add any other required fields here
+                "conversation_id": str(uuid.uuid4())
             }
             new_conversation = self.supabase.table("conversations").insert(
                 new_conversation_data).execute()
