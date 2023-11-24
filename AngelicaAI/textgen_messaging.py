@@ -10,7 +10,7 @@ load_dotenv()
 
 class TextgenMessaging:
     def __init__(self):
-        self.TEXTGEN_API_URL = "http://127.0.0.1:5000/v1/chat/completions"
+        self.TEXTGEN_API_URL = os.getenv("TEXTGEN_API_URL")
         self.HEADERS = {
             "Content-Type": "application/json"
         }
