@@ -21,3 +21,4 @@ venv/
 # Ignore log files and local databases
 *.log
 *.sqlite
+.aider*
