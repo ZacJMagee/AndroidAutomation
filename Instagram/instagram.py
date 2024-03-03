@@ -269,12 +269,6 @@ class InstagramChatbot:
             logging.error(f"Error initializing TextgenMessaging: {e}")
         logging.info("Supabase initialized")
 
-    def open_instagram(self):
-        return self.instagram_actions.open_instagram()
-
-    def wait(self, min_seconds=5, max_seconds=10):
-        random_sleep(min_seconds, max_seconds)
-
     def open_messages(self):
         # Wait for the inbox button to be visible
         inbox_button = d(
